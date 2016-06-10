@@ -1,9 +1,12 @@
-# Overview
-Contains sample code for integrating LightWare rangefinders into various platforms. Please visit http://dev.lightware.co.za for extensive documentation detailing usage of the sample code.
+# LightWare Sample Code
+## Overview
+This repository contains sample code for integrating LightWare rangefinders into various platforms. Please visit http://dev.lightware.co.za for extensive documentation detailing the usage of these samples.
 
 Visit http://www.lightware.co.za for more information about the products we provide.
 
-# License: Unlicense
+## License
+**Unlicense (http://unlicense.org) **
+
 This is free and unencumbered software released into the public domain.
 
 Anyone is free to copy, modify, publish, use, compile, sell, or
