@@ -33,7 +33,7 @@ while True:
 	port.write('LD\r\n')
 	distanceStr = port.readline()
 	# Convert the distance string response into a number
-	distanceCM = float(distanceStr) * 1000
+	distanceCM = float(distanceStr) * 100
 
 	# Do what you want with the distance information here
 	print(distanceCM)
