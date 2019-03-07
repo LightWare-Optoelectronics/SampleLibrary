@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------------
-// LightWare LW20 Linux Example
+// LightWare SF11 Linux Example
 //-------------------------------------------------------------------------
 
 #include <stdio.h>
@@ -208,8 +208,8 @@ int main(int args, char** argv)
 {
 	printf("SF11 sample\n");
 
-	//runUsbPortSample();
-	runSerialPortSample();
+	runUsbPortSample();
+	//runSerialPortSample();
 	
 	return 0;
 }
