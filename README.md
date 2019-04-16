@@ -1,6 +1,6 @@
 # LightWare Sample Code
 ## Overview
-This repository contains sample code for integrating LightWare rangefinders into various platforms. Please visit http://dev.lightware.co.za for extensive documentation detailing the usage of these samples.
+This repository contains sample code for integrating LightWare rangefinders into various platforms.
 
 Visit http://www.lightware.co.za for more information about the products we provide.
 
