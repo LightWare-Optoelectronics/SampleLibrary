@@ -3,7 +3,6 @@
 // https://lightware.co.za
 //-------------------------------------------------------------------------------------------
 
-const chalk = require('chalk');
 const SerialPort = require('serialport');
 
 let socket = new SerialPort('/dev/ttyUSB1', { baudRate: 921600 });
