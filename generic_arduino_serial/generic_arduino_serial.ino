@@ -16,7 +16,7 @@
 void setup() {
   Serial.begin(115200);
 
-  // Buad rate of the device can be configured.
+  // Baud rate of the device can be configured.
   Serial1.begin(115200);
 
   Serial.write("\r\n");
