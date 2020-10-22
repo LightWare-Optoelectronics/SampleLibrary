@@ -129,25 +129,25 @@ def readStr16(packetData):
 
 # Extract signal data from a signal data packet.
 def readSignalData(packetData):
-	firstFiltered = response[6] << 0
-	firstFiltered |= response[7] << 8
+	firstFiltered = packetData[6] << 0
+	firstFiltered |= packetData[7] << 8
 	firstFiltered /= 100.0
 
-	firstStrength = response[8] << 0
-	firstStrength |= response[9] << 8
+	firstStrength = packetData[8] << 0
+	firstStrength |= packetData[9] << 8
 
-	lastFiltered = response[12] << 0
-	lastFiltered |= response[13] << 8
+	lastFiltered = packetData[12] << 0
+	lastFiltered |= packetData[13] << 8
 	lastFiltered /= 100.0
 
-	lastStrength = response[14] << 0
-	lastStrength |= response[15] << 8
+	lastStrength = packetData[14] << 0
+	lastStrength |= packetData[15] << 8
 
-	noise = response[16] << 0
-	noise |= response[17] << 8
+	noise = packetData[16] << 0
+	noise |= packetData[17] << 8
 
-	temperature = response[18] << 0
-	temperature |= response[19] << 8
+	temperature = packetData[18] << 0
+	temperature |= packetData[19] << 8
 	temperature /= 100
 
 	return firstFiltered, firstStrength, lastFiltered, lastStrength, noise, temperature
