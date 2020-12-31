@@ -21,18 +21,18 @@ serialPortBaudRate = 115200
 port = serial.Serial(serialPortName, serialPortBaudRate, timeout=0.1)
 
 # Enable serial mode by sending some characters over the serial port.
-port.write('www\r\n')
+port.write(bytes('www\r\n','ascii'))
 # Read and ignore any unintended responses
 port.readline()
 
 # Get the product information
-port.write('?\r\n')
+port.write(bytes('?\r\n','ascii'))
 productInfo = port.readline()
-print('Product information: ' + productInfo)
+print('Product information: ' + productInfo.decode('ascii'))
 
-while True:	
+while True:
 	# Get distance reading (First return, default filtering)
-	port.write('LD\r\n')
+	port.write(bytes('LD\r\n','ascii'))
 	distanceStr = port.readline()
 	# Convert the distance string response into a number
 	distanceCM = float(distanceStr) * 100
