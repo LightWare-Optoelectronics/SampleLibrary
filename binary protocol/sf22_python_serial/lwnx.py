@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------------------------------------------
-# LightWare 2019
+# LightWare 2021
 #--------------------------------------------------------------------------------------------------------------
 # Description:
 #   This samples communicates with the SF22.
@@ -214,9 +214,20 @@ def sf22SetUpdateRate(port, rate):
 
 	executeCommand(port, 87, 1, [rate & 0xFF, rate >> 8])
 
-def sf22StartDistanceStreaming(port):
+# This sets which values are included when distances are queried from the SF22.
+def sf22SetDistanceOutput(port):
 	executeCommand(port, 27, 1, [246, 0, 0, 0])
+
+def sf22StartDistanceStreaming(port):
 	executeCommand(port, 30, 1, [13, 0, 0, 0])
+
+def sf22GetDistance(port):
+	response = executeCommand(port, 45, 0)
+
+	if response != None:
+		return getSignalData(response)
+
+	return None
 
 def sf22WaitForMeasurement(port):
 	response = waitForPacket(port, 204, 2)
@@ -225,6 +236,19 @@ def sf22WaitForMeasurement(port):
 		return getSignalData(response)
 
 	return None
+
+#--------------------------------------------------------------------------------------------------------------
+# Helper functions.
+#--------------------------------------------------------------------------------------------------------------
+def printDistanceData(measurementInfo):
+	print('First signal: {} m {} % - Last signal: {} m {} % - Noise: {} - Temperature: {} degrees'.format(
+			measurementInfo['firstDistance'],
+			measurementInfo['firstStrength'],
+			measurementInfo['lastDistance'],
+			measurementInfo['lastStrength'],
+			measurementInfo['noise'],
+			measurementInfo['temperature'],
+		))
 
 #--------------------------------------------------------------------------------------------------------------
 # Main application.
@@ -236,15 +260,32 @@ serialPortName = '/dev/ttyACM0'
 serialPortBaudRate = 921600
 port = serial.Serial(serialPortName, serialPortBaudRate, timeout = 0.5)
 
+# Get device information.
 productInfo = sf22GetProductInformation(port)
 print('Hardware name: ' + productInfo['hardwareName'])
 print('Hardware version: ' + str(productInfo['hardwareVersion']))
 print('Firmware version: ' + productInfo['firmwareVersion'])
 print('Serial number: ' + productInfo['serialNumber'])
 
+# Setup device parameters.
 print('Set update rate')
 sf22SetUpdateRate(port, 100)
 
+print('Set distance output')
+sf22SetDistanceOutput(port)
+
+# Collect some distance data with the polling method.
+print('Start polled data readings')
+for x in range(10):
+	measurementInfo = sf22GetDistance(port)
+	
+	if measurementInfo != None:
+		printDistanceData(measurementInfo)
+
+	# Delay 100 ms for next reading
+	time.sleep(0.1)
+
+# Continuously collect distance data with the streaming method.
 print('Start data streaming')
 sf22StartDistanceStreaming(port)
 
@@ -253,11 +294,4 @@ while True:
 	measurementInfo = sf22WaitForMeasurement(port)
 
 	if measurementInfo != None:
-		print('First signal: {} m {} % - Last signal: {} m {} % - Noise: {} - Temperature: {} degrees'.format(
-			measurementInfo['firstDistance'],
-			measurementInfo['firstStrength'],
-			measurementInfo['lastDistance'],
-			measurementInfo['lastStrength'],
-			measurementInfo['noise'],
-			measurementInfo['temperature'],
-		))
+		printDistanceData(measurementInfo)
