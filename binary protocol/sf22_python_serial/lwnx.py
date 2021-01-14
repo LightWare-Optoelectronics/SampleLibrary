@@ -222,7 +222,7 @@ def sf22StartDistanceStreaming(port):
 	executeCommand(port, 30, 1, [13, 0, 0, 0])
 
 def sf22GetDistance(port):
-	response = executeCommand(port, 45, 0)
+	response = executeCommand(port, 44, 0)
 
 	if response != None:
 		return getSignalData(response)
