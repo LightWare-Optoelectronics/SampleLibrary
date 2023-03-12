@@ -18,14 +18,18 @@ float getNextReading(lwSerialPort* Port) {
 
 	while (1) {
 		char recvData;
-		Port->readData((uint8_t*)&recvData, 1);
+		if (Port->readData((uint8_t*)&recvData, 1) == 1) {
+			if (recvData == '\n') {
+				line[lineSize] = 0;
+				float distance = atof(line);
+				return distance;
+			} else if (isdigit(recvData) || recvData == '.') {
+				line[lineSize++] = recvData;
 
-		if (recvData == '\n') {
-			line[lineSize] = 0;
-			float distance = atof(line);
-			return distance;
-		} else if (recvData != '\r' && recvData != ' ') {
-			line[lineSize++] = recvData;
+				if (lineSize == sizeof line) {
+					lineSize = 0;
+				}
+			}
 		}
 	}
 }
@@ -47,7 +51,7 @@ int main(int args, char **argv)
 #endif
 
 	// NOTE: The baudrate is ignored when using USB.
-	int32_t baudRate = 921600;
+	int32_t baudRate = 115200;
 
 	lwSerialPort* serial = platformCreateSerialPort();
 	if (!serial->connect(portName, baudRate)) {
