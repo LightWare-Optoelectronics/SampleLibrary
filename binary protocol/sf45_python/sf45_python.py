@@ -2,10 +2,10 @@
 # LightWare 2021
 #--------------------------------------------------------------------------------------------------------------
 # Description:
-#   This samples communicates with the SF45.
+#	This samples communicates with the SF45.
 #
 # Notes:
-# 	Requires the pySerial module.
+#	Requires the pySerial module.
 #--------------------------------------------------------------------------------------------------------------
 
 import time
@@ -14,13 +14,13 @@ import serial
 #--------------------------------------------------------------------------------------------------------------
 # LWNX library functions.
 #--------------------------------------------------------------------------------------------------------------
-packetParseState = 0
-packetPayloadSize = 0
-packetSize = 0
-packetData = []
+_packet_parse_state = 0
+_packet_payload_size = 0
+_packet_size = 0
+_packet_data = []
 
 # Create a CRC-16-CCITT 0x1021 hash of the specified data.
-def createCrc(data):
+def create_crc(data):
 	crc = 0
 	
 	for i in data:
@@ -38,146 +38,94 @@ def createCrc(data):
 	return crc
 
 # Create raw bytes for a packet.
-def buildPacket(command, write, data=[]):
-	payloadLength = 1 + len(data)
-	flags = (payloadLength << 6) | (write & 0x1)
-	packetBytes = [0xAA, flags & 0xFF, (flags >> 8) & 0xFF, command]
-	packetBytes.extend(data)
-	crc = createCrc(packetBytes)
-	packetBytes.append(crc & 0xFF)
-	packetBytes.append((crc >> 8) & 0xFF)
+def build_packet(command, write, data=[]):
+	payload_length = 1 + len(data)
+	flags = (payload_length << 6) | (write & 0x1)
+	packet_bytes = [0xAA, flags & 0xFF, (flags >> 8) & 0xFF, command]
+	packet_bytes.extend(data)
+	crc = create_crc(packet_bytes)
+	packet_bytes.append(crc & 0xFF)
+	packet_bytes.append((crc >> 8) & 0xFF)
 
-	return bytearray(packetBytes)
+	return bytearray(packet_bytes)
 
 # Check for packet in byte stream.
-def parsePacket(byte):
-	global packetParseState
-	global packetPayloadSize
-	global packetSize
-	global packetData
+def parse_packet(byte):
+	global _packet_parse_state
+	global _packet_payload_size
+	global _packet_size
+	global _packet_data
 
-	if packetParseState == 0:
+	if _packet_parse_state == 0:
 		if byte == 0xAA:
-			packetParseState = 1
-			packetData = [0xAA]
+			_packet_parse_state = 1
+			_packet_data = [0xAA]
 
-	elif packetParseState == 1:
-		packetParseState = 2
-		packetData.append(byte)
+	elif _packet_parse_state == 1:
+		_packet_parse_state = 2
+		_packet_data.append(byte)
 
-	elif packetParseState == 2:
-		packetParseState = 3
-		packetData.append(byte)
-		packetPayloadSize = (packetData[1] | (packetData[2] << 8)) >> 6
-		packetPayloadSize += 2
-		packetSize = 3
+	elif _packet_parse_state == 2:
+		_packet_parse_state = 3
+		_packet_data.append(byte)
+		_packet_payload_size = (_packet_data[1] | (_packet_data[2] << 8)) >> 6
+		_packet_payload_size += 2
+		_packet_size = 3
 
-		if packetPayloadSize > 1019:
-			packetParseState = 0
+		if _packet_payload_size > 1019:
+			_packet_parse_state = 0
 
-	elif packetParseState == 3:
-		packetData.append(byte)
-		packetSize += 1
-		packetPayloadSize -= 1
+	elif _packet_parse_state == 3:
+		_packet_data.append(byte)
+		_packet_size += 1
+		_packet_payload_size -= 1
 
-		if packetPayloadSize == 0:
-			packetParseState = 0
-			crc = packetData[packetSize - 2] | (packetData[packetSize - 1] << 8)
-			verifyCrc = createCrc(packetData[0:-2])
+		if _packet_payload_size == 0:
+			_packet_parse_state = 0
+			crc = _packet_data[_packet_size - 2] | (_packet_data[_packet_size - 1] << 8)
+			verify_crc = create_crc(_packet_data[0:-2])
 			
-			if crc == verifyCrc:
+			if crc == verify_crc:
 				return True
 
 	return False
 
-# Wait (up to timeout) for a packet to be received of the specified command.
-def waitForPacket(port, command, timeout=1):
-	global packetParseState
-	global packetPayloadSize
-	global packetSize
-	global packetData
+# Wait (up to timeout) for a packet of the specified command to be received.
+def wait_for_packet(port, command, timeout=1):
+	global _packet_parse_state
+	global _packet_payload_size
+	global _packet_size
+	global _packet_data
 
-	packetParseState = 0
-	packetData = []
-	packetPayloadSize = 0
-	packetSize = 0
+	_packet_parse_state = 0
+	_packet_data = []
+	_packet_payload_size = 0
+	_packet_size = 0
 
-	endTime = time.time() + timeout
+	end_time = time.time() + timeout
 
 	while True:
-		if time.time() >= endTime:
+		if time.time() >= end_time:
 			return None
 
 		c = port.read(1)
 
 		if len(c) != 0:
 			b = ord(c)
-			if parsePacket(b) == True:
-				if packetData[3] == command:
-					return packetData
-
-# Extract a 16 byte string from a string packet.
-def readStr16(packetData):
-	str16 = ''
-	for i in range(0, 16):
-		if packetData[4 + i] == 0:
-			break
-		else:
-			str16 += chr(packetData[4 + i])
-
-	return str16
-
-# Extract signal data from a signal data packet.
-def readSignalData(packetData):
-	firstRaw = packetData[4] << 0
-	firstRaw |= packetData[5] << 8
-	firstRaw /= 100.0
-
-	firstFiltered = packetData[6] << 0
-	firstFiltered |= packetData[7] << 8
-	firstFiltered /= 100.0
-
-	firstStrength = packetData[8] << 0
-	firstStrength |= packetData[9] << 8
-
-	lastRaw = packetData[10] << 0
-	lastRaw |= packetData[11] << 8
-	lastRaw /= 100.0
-
-	lastFiltered = packetData[12] << 0
-	lastFiltered |= packetData[13] << 8
-	lastFiltered /= 100.0
-
-	lastStrength = packetData[14] << 0
-	lastStrength |= packetData[15] << 8
-
-	noise = packetData[16] << 0
-	noise |= packetData[17] << 8
-
-	temperature = packetData[18] << 0
-	temperature |= packetData[19] << 8
-	temperature /= 100
-
-	yawAngle = packetData[20] << 0
-	yawAngle |= packetData[21] << 8
-	#yawAngle = 100
-	if yawAngle > 32000:
-		yawAngle = yawAngle - 65535
-
-	yawAngle /= 100.0
-
-	return firstRaw, firstFiltered, firstStrength, lastRaw, lastFiltered, lastStrength, noise, temperature , yawAngle 
-
-# Send a request packet and wait for response.
-def executeCommand(port, command, write, data=[], timeout=1):
-	packet = buildPacket(command, write, data)
+			if parse_packet(b) == True:
+				if _packet_data[3] == command:
+					return _packet_data
+				
+# Send a request packet and wait (up to timeout) for a response.
+def execute_command(port, command, write, data=[], timeout=1):
+	packet = build_packet(command, write, data)
 	retries = 4
 
 	while retries > 0:
 		retries -= 1
 		port.write(packet)
 
-		response = waitForPacket(port, command, timeout)
+		response = wait_for_packet(port, command, timeout)
 
 		if response != None:
 			return response
@@ -185,32 +133,114 @@ def executeCommand(port, command, write, data=[], timeout=1):
 	raise Exception('LWNX command failed to receive a response.')
 
 #--------------------------------------------------------------------------------------------------------------
+# SF45 API helper functions.
+# NOTE: Using the SF45 commands as detailed here: https://support.lightware.co.za/sf45b/#/commands
+#--------------------------------------------------------------------------------------------------------------
+# Extract a 16 byte string from a string packet.
+def get_str16_from_packet(packet):
+	str16 = ''
+	for i in range(0, 16):
+		if packet[4 + i] == 0:
+			break
+		else:
+			str16 += chr(packet[4 + i])
+
+	return str16
+
+def print_product_information(port):
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/0.%20product%20name
+	response = execute_command(port, 0, 0, timeout = 0.1)
+	print('Product: ' + get_str16_from_packet(response))
+
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/2.%20firmware%20version
+	response = execute_command(port, 2, 0, timeout = 0.1)
+	print('Firmware: {}.{}.{}'.format(response[6], response[5], response[4]))
+
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/3.%20serial%20number
+	response = execute_command(port, 3, 0, timeout = 0.1)
+	print('Serial: ' + get_str16_from_packet(response))
+
+def set_update_rate(port, value):
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/66.%20update%20rate
+	# Value can be one of:
+	# 1	= 50 Hz
+	# 2	= 100 Hz
+	# 3	= 200 Hz
+	# 4	= 400 Hz
+	# 5	= 500 Hz
+	# 6	= 625 Hz
+	# 7	= 1000 Hz
+	# 8	= 1250 Hz
+	# 9	= 1538 Hz
+	# 10 = 2000 Hz
+	# 11 = 2500 Hz
+	# 12 = 5000 Hz
+
+	if value < 1 or value > 12:
+		raise Exception('Invalid update rate value.')
+	
+	execute_command(port, 66, 1, [value])
+
+def set_default_distance_output(port, use_last_return = False):
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/27.%20distance%20output
+	if use_last_return == True:
+		# Configure output to have 'last return raw' and 'yaw angle'.
+		execute_command(port, 27, 1, [1, 1, 0, 0])
+	else:
+		# Configure output to have 'first return raw' and 'yaw angle'.
+		execute_command(port, 27, 1, [8, 1, 0, 0])
+
+def set_distance_stream_enable(port, enable):
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/30.%20stream
+	if enable == True:
+		execute_command(port, 30, 1, [5, 0, 0, 0])
+	else:
+		execute_command(port, 30, 1, [0, 0, 0, 0])
+
+def wait_for_reading(port, timeout=1):
+	# https://support.lightware.co.za/sf45b/#/command_detail/command%20descriptions/44.%20distance%20data%20in%20cm
+	response = wait_for_packet(port, 44, timeout)
+	
+	if response == None:
+		return -1, 0
+	
+	distance = (response[4] << 0 | response[5] << 8) / 100.0
+	
+	yaw_angle = response[6] << 0 | response[7] << 8
+	if yaw_angle > 32000:
+		yaw_angle = yaw_angle - 65535
+
+	yaw_angle /= 100.0
+
+	return distance, yaw_angle
+
+#--------------------------------------------------------------------------------------------------------------
 # Main application.
 #--------------------------------------------------------------------------------------------------------------
-print('Running LWNX sample.')
+print('Running SF45/B LWNX sample.')
 
-# NOTE: Using the SF30/D commands as detailed here: https://support.lightware.co.za/sf30d
+# Make a connection to the serial port.
+# NOTE: You will need to change the port name and baud rate to match your connected SF45.
+# Common Rapsberry Pi port name: /dev/ttyACM1
+serial_port_name = 'COM3'
+serial_port_baudrate = 921600
+sensor_port = serial.Serial(serial_port_name, serial_port_baudrate, timeout = 0.1)
 
-# Make a connection to the com port.
-serialPortName = '/dev/ttyACM1'
-serialPortBaudRate = 921600
-port = serial.Serial(serialPortName, serialPortBaudRate, timeout = 0.1)
+# Get sensor information.
+print_product_information(sensor_port)
 
-# Get product information.
-response = executeCommand(port, 0, 0, timeout = 0.1)
-print('Product: ' + readStr16(response))
+# Configure the sensor.
+# NOTE: See the set_update_rate function for values that can be used.
+set_update_rate(sensor_port, 1)
+set_default_distance_output(sensor_port)
 
-# Configure Update Rate
-executeCommand(port, 66, 12, [0, 0])
+# Start streaming distances.
+set_distance_stream_enable(sensor_port, True)
 
-# Set output to all information.
-executeCommand(port, 27, 1, [255, 255, 255, 255])
-
-# Read distance data
 while True:
-	response = executeCommand(port, 44,0)
+	distance, yaw_angle = wait_for_reading(sensor_port)
 
-	if response != None:
-		response = executeCommand(port, 44, 0)
-		firstRaw, firstFiltered, firstStrength, lastRaw, lastFiltered, lastStrength, noise, temperature ,  yawAngle = readSignalData(response)
-		print('{} m   {} m   {} %   {} m   {} m   {} %   {}   {}   {} deg'.format( firstRaw, firstFiltered, firstStrength, lastRaw, lastFiltered, lastStrength, noise, temperature , yawAngle ))
+	if distance != -1:
+		print('{} m {} deg'.format(distance, yaw_angle))
+	else:
+		print('No reading streamed.')
