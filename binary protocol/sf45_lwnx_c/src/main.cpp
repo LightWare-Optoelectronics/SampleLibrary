@@ -104,7 +104,7 @@ int main(int args, char **argv)
 			uint16_t firstReturnRaw = readInt16(response.data, 4);
 			uint16_t firstReturnStrength = readInt16(response.data, 6);
 			float temperature = readInt16(response.data, 8) / 100.0;
-			float yawAngle = (int16_t)(readInt16(response.data, 10) / 100.0);
+			float yawAngle = (((int16_t)readInt16(response.data, 10)) / 100.0);
 
 			printf("Distance: %5d cm  Strength: %5d %%  Temperature: %f degrees  Angle: %f degrees\n", firstReturnRaw, firstReturnStrength, temperature, yawAngle);
 		}
