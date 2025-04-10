@@ -186,12 +186,19 @@ def wait_for_next_response(port: serial, expected_command_id: int, timeout: floa
 		if port.in_waiting == 0:
 			if time.time() >= end_time:
 				return None
+			
+		pr = port.read(1)
 
-		byte = ord(port.read(1))
+		if len(pr) == 0:
+			continue
+		
+		byte = ord(pr)
 
 		if response.feed(byte):
 			if response.command_id == expected_command_id:
 				return response
+			else:
+				response.reset()
 
 def send_request_get_response(port: serial, request: Request, timeout: float = 1) -> Response:
 	retries = 4
@@ -223,6 +230,7 @@ def main():
 	port = serial.Serial(serial_port_path, serial_port_baudrate, timeout = 0.1)
 
 	# Get product name (0. Product name).
+	# NOTE: This command also switches the device into LWNX mode.
 	response = send_request_get_response(port, create_request_read(0))
 	print('Product: ' + response.parse_string())
 
