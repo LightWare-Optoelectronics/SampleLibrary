@@ -46,7 +46,7 @@ int main(int args, char **argv)
 #ifdef __linux__
 	const char* portName = "/dev/ttyUSB0";
 #else
-	const char* portName = "\\\\.\\COM10";
+	const char* portName = "\\\\.\\COM3";
 #endif
 
 	int32_t baudRate = 921600;
@@ -83,6 +83,12 @@ int main(int args, char **argv)
 
 	// Set the output rate to 500 readings per second. (Command 66: Update rate)
 	if (!lwnxCmdWriteUInt8(serial, 66, 5)) { exitCommandFailure(); }
+
+	// Set the scan low angle to -90.
+	if (!lwnxCmdWriteFloat(serial, 98, -90)) { exitCommandFailure(); }
+
+	// Set the scan high angle to 90.
+	if (!lwnxCmdWriteFloat(serial, 99, 90)) { exitCommandFailure(); }
 
 	// Set distance output to include the following: (Command 27: Distance output)
 	// first return raw distance: 0
