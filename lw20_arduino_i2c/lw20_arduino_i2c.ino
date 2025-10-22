@@ -15,7 +15,10 @@ void setup() {
   Serial.println("Starting...");
 
   // Make sure I2C protocol is active
-  Wire.requestFrom(i2cAddress, 0);
+  Wire.beginTransmission(i2cAddress);
+  Wire.write('?');
+  Wire.write('\r');
+  Wire.endTransmission(true);
 
   // Get product info.
   Wire.beginTransmission(i2cAddress);
